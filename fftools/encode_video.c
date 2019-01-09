@@ -48,8 +48,12 @@ int main(int argc, char **argv)
     const char* filename = "dest.avi";
     
     //enum AVCodecID codec_id = AV_CODEC_ID_MPEG4;
-    enum AVCodecID codec_id = AV_CODEC_ID_H264;
     //enum AVCodecID codec_id = AV_CODEC_ID_H265;
+    enum AVCodecID codec_id = AV_CODEC_ID_H264;
+
+    //enum AVPixelFormat video_format = AV_PIX_FMT_RGB24; // RGB类型的格式 avcodec_open2会失败
+    //enum AVPixelFormat video_format = AV_PIX_FMT_YUV420P;
+    enum AVPixelFormat video_format = AV_PIX_FMT_YUV422P;
 
     codec = avcodec_find_encoder(codec_id);
     if (!codec) 
@@ -81,12 +85,11 @@ int main(int argc, char **argv)
 
     codec_context->gop_size = 10; // 如果frame->pict_type是AV_PICTURE_TYPE_I 编码器会忽略gop 每一帧都会编码为I帧
     codec_context->max_b_frames = 1;
-    codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
+    codec_context->pix_fmt = video_format;
 
     if (codec->id == AV_CODEC_ID_H264)
         av_opt_set(codec_context->priv_data, "preset", "slow", 0);
-
-    /* open it */
+     
     int ret = avcodec_open2(codec_context, codec, NULL);
     if (ret < 0)
     {
@@ -128,25 +131,31 @@ int main(int argc, char **argv)
         if (ret < 0)
             exit(1);
 
-        /* prepare a dummy image */
-        /* Y */
-        for (int y = 0; y < codec_context->height; y++)
+        if (video_format == AV_PIX_FMT_YUV420P)
         {
-            for (int x = 0; x < codec_context->width; x++)
+            /* Y */
+            for (int y = 0; y < codec_context->height; y++)
             {
-                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+                for (int x = 0; x < codec_context->width; x++)
+                {
+                    frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+                }
+            }
+            /* Cb and Cr */
+            for (int y = 0; y < codec_context->height / 2; y++)
+            {
+                for (int x = 0; x < codec_context->width / 2; x++)
+                {
+                    frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+                    frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+                }
             }
         }
-        /* Cb and Cr */
-        for (int y = 0; y < codec_context->height/2; y++)
+        else
         {
-            for (int x = 0; x < codec_context->width/2; x++)
-            {
-                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
-                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
-            }
-        }
 
+        }
+         
         frame->pts = i;
         encode(codec_context, frame, pkt, fpWrite);
     }
