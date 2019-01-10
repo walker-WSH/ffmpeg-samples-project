@@ -9,7 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ffmpeg", "ffmpeg.vcxproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "muxing", "muxing.vcxproj", "{8311EEF6-76CB-4835-8210-2A6954B01BE9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "encodevideo", "encodevideo.vcxproj", "{771B8BFE-B3E3-4FA3-A96A-0F1F11AE0A61}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "encode video", "encodevideo.vcxproj", "{771B8BFE-B3E3-4FA3-A96A-0F1F11AE0A61}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "encode audio", "encode audio.vcxproj", "{670E5C00-60B4-4FBA-A6F4-A948993D874F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,14 @@ Global
 		{771B8BFE-B3E3-4FA3-A96A-0F1F11AE0A61}.Release|x64.Build.0 = Release|x64
 		{771B8BFE-B3E3-4FA3-A96A-0F1F11AE0A61}.Release|x86.ActiveCfg = Release|Win32
 		{771B8BFE-B3E3-4FA3-A96A-0F1F11AE0A61}.Release|x86.Build.0 = Release|Win32
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Debug|x64.ActiveCfg = Debug|x64
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Debug|x64.Build.0 = Debug|x64
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Debug|x86.ActiveCfg = Debug|Win32
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Debug|x86.Build.0 = Debug|Win32
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x64.ActiveCfg = Release|x64
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x64.Build.0 = Release|x64
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x86.ActiveCfg = Release|Win32
+		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

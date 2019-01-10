@@ -268,10 +268,9 @@ static void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height
 static AVFrame *get_video_frame(OutputStream *ost)
 {
     AVCodecContext* codecContext = ost->pAVCodecContext;
-
-    /* check whether we want to generate more frames */
+     
     if (av_compare_ts(ost->next_pts, codecContext->time_base, STREAM_DURATION, (AVRational) { 1, 1 }) >= 0)
-        return NULL;
+        return NULL; // 如果时长够了 就停止
 
     /* when we pass a frame to the encoder, it may keep a reference to it internally;
     make sure we do not overwrite it here */
