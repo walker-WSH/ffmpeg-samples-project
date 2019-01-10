@@ -45,7 +45,7 @@ int main(int argc, char **argv)
     AVPacket *pkt;
 
     FILE *fpWrite;
-    const char* filename = "dest.avi";
+    const char* filename = "encodeVideo.avi";
     
     //enum AVCodecID codec_id = AV_CODEC_ID_MPEG4;
     //enum AVCodecID codec_id = AV_CODEC_ID_H265;
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     codec_context->pix_fmt = video_format;
 
     if (codec->id == AV_CODEC_ID_H264)
-        av_opt_set(codec_context->priv_data, "preset", "slow", 0);
+        av_opt_set(codec_context->priv_data, "preset", "slow", 0); // priv_data 属于每个编码器特有的设置域，用av_opt_set 设置
      
     int ret = avcodec_open2(codec_context, codec, NULL);
     if (ret < 0)
