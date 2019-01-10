@@ -184,8 +184,9 @@ static void encode(AVCodecContext *ctx, AVFrame *frame, AVPacket *pkt, FILE *out
         printf("-------------------Send frame  \n");
 
     int ret = avcodec_send_frame(ctx, frame);
-    if (ret < 0)
+    if (ret < 0) 
     {
+        // 此处如果错误码是AVERROR_EOF，可能还可以拿到一个包，应该接着调用avcodec_receive_packet
         fprintf(stderr, "Error sending the frame to the encoder\n");
         exit(1);
     }

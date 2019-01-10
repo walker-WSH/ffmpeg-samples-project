@@ -154,6 +154,9 @@
   <ItemGroup>
     <ClCompile Include="transcode_aac.c" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="transcode_aac.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
