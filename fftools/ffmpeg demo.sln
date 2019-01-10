@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "encode video", "encodevideo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "encode audio", "encode audio.vcxproj", "{670E5C00-60B4-4FBA-A6F4-A948993D874F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "transcode_aac", "transcode_aac.vcxproj", "{FB396B25-E226-4D1F-A909-9B43B0F009A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +63,14 @@ Global
 		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x64.Build.0 = Release|x64
 		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x86.ActiveCfg = Release|Win32
 		{670E5C00-60B4-4FBA-A6F4-A948993D874F}.Release|x86.Build.0 = Release|Win32
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Debug|x64.ActiveCfg = Debug|x64
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Debug|x64.Build.0 = Debug|x64
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Debug|x86.ActiveCfg = Debug|Win32
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Debug|x86.Build.0 = Debug|Win32
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Release|x64.ActiveCfg = Release|x64
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Release|x64.Build.0 = Release|x64
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Release|x86.ActiveCfg = Release|Win32
+		{FB396B25-E226-4D1F-A909-9B43B0F009A6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
