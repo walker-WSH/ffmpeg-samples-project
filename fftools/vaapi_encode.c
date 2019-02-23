@@ -4,6 +4,7 @@
  * raw file, usage like: vaapi_encode 1920 1080 input.yuv output.h264
  *
  */
+#if 0
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -217,3 +218,5 @@ close:
 
     return err;
 }
+
+#endif

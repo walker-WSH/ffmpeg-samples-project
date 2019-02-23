@@ -6,7 +6,7 @@
  *      - vaapi_transcode input.mp4 vp9_vaapi output_vp9.ivf
  */
 
-#if 0
+#if 1
 #include <stdio.h>
 #include <errno.h>
 
@@ -222,14 +222,11 @@ int main(int argc, char **argv)
     int ret = 0;
     AVPacket dec_pkt;
     AVCodec *enc_codec;
-
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s <input file> <encode codec> <output file>\n"
-                "The output format is guessed according to the file extension.\n"
-                "\n", argv[0]);
-        return -1;
-    }
-
+     
+    char* input = "input.mp4";
+    char* output = "output_h264.mp4";
+    char* encodername = "h264_vaapi"; // "vp9_vaapi" "h264_vaapi"
+      
     ret = av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI, NULL, NULL, 0);
     if (ret < 0)
     {
@@ -237,17 +234,17 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if ((ret = open_input_file(argv[1])) < 0)
+    if ((ret = open_input_file(input)) < 0)
         goto end;
 
-    if (!(enc_codec = avcodec_find_encoder_by_name(argv[2])))
+    if (!(enc_codec = avcodec_find_encoder_by_name(encodername)))
     {
-        fprintf(stderr, "Could not find encoder '%s'\n", argv[2]);
+        fprintf(stderr, "Could not find encoder '%s'\n", encodername);
         ret = -1;
         goto end;
     }
 
-    if ((ret = (avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, argv[3]))) < 0) {
+    if ((ret = (avformat_alloc_output_context2(&ofmt_ctx, NULL, NULL, output))) < 0) {
         fprintf(stderr, "Failed to deduce output format from file extension. Error code: "
                 "%s\n", av_err2str(ret));
         goto end;
@@ -258,7 +255,7 @@ int main(int argc, char **argv)
         goto end;
     }
 
-    ret = avio_open(&ofmt_ctx->pb, argv[3], AVIO_FLAG_WRITE);
+    ret = avio_open(&ofmt_ctx->pb, output, AVIO_FLAG_WRITE);
     if (ret < 0) 
     {
         fprintf(stderr, "Cannot open output file. Error code: %s\n", av_err2str(ret));
