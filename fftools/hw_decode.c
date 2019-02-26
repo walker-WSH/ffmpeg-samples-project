@@ -2,8 +2,9 @@
  * This example shows how to do HW-accelerated decoding with output
  * frames from the HW video surfaces.
  */
-#if 0
+#if 1
 #include <stdio.h>
+#include <windows.h>
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -17,7 +18,7 @@ static AVBufferRef *hw_device_ctx = NULL;
 static enum AVPixelFormat hw_pix_fmt;
 static FILE *output_file = NULL;
 
-static int hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType type)
+static int hw_decoder_init_func(AVCodecContext *ctx, const enum AVHWDeviceType type)
 {
     int err = 0;
 
@@ -31,7 +32,7 @@ static int hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType type)
     return err;
 }
 
-static enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts)
+static enum AVPixelFormat get_hw_format_func(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts)
 {
     const enum AVPixelFormat *p;
 
@@ -95,7 +96,11 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
         else
             tmp_frame = frame;
 
-        size = av_image_get_buffer_size(tmp_frame->format, tmp_frame->width, tmp_frame->height, 1);
+        int buffer_align = 1;
+
+        enum AVPixelFormat tempfmt = tmp_frame->format;
+
+        size = av_image_get_buffer_size(tmp_frame->format, tmp_frame->width, tmp_frame->height, buffer_align);
         buffer = av_malloc(size);
         if (!buffer)
         {
@@ -103,10 +108,15 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
+
         ret = av_image_copy_to_buffer(buffer, size,
-                                      (const uint8_t * const *)tmp_frame->data,
-                                      (const int *)tmp_frame->linesize, tmp_frame->format,
-                                      tmp_frame->width, tmp_frame->height, 1);
+            (const uint8_t * const *)tmp_frame->data,
+            (const int *)tmp_frame->linesize,
+            tmp_frame->format,
+            tmp_frame->width,
+            tmp_frame->height,
+            buffer_align);
+
         if (ret < 0)
         {
             fprintf(stderr, "Can not copy image to buffer\n");
@@ -137,24 +147,21 @@ int main(int argc, char *argv[])
     AVCodecContext *decoder_ctx = NULL;
     AVCodec *decoder = NULL;
     AVPacket packet;
-    enum AVHWDeviceType type;
-    int i;
- 
-    type = av_hwdevice_find_type_by_name(argv[1]);
-    if (type == AV_HWDEVICE_TYPE_NONE)
+    enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
+
+    fprintf(stderr, "Available device types:");
+    while ((hw_type = av_hwdevice_iterate_types(hw_type)) != AV_HWDEVICE_TYPE_NONE)
+        fprintf(stderr, " %s", av_hwdevice_get_type_name(hw_type));
+
+    hw_type = av_hwdevice_find_type_by_name("cuda");
+    if (hw_type == AV_HWDEVICE_TYPE_NONE)
     {
         fprintf(stderr, "Device type is not supported.\n");
-        fprintf(stderr, "Available device types:");
-        
-        while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
-            fprintf(stderr, " %s", av_hwdevice_get_type_name(type));
-       
-        fprintf(stderr, "\n");
         return -1;
     }
 
     /* open the input file */
-    if (avformat_open_input(&input_ctx, "test.flv", NULL, NULL) != 0)
+    if (avformat_open_input(&input_ctx, "test.mp4", NULL, NULL) != 0)
     {
         fprintf(stderr, "Cannot open input file \n");
         return -1;
@@ -174,18 +181,18 @@ int main(int argc, char *argv[])
         return -1;
     }
     video_stream = ret;
-
-    for (i = 0;; i++) 
+     
+    for (int i = 0;; i++)
     {
         const AVCodecHWConfig *config = avcodec_get_hw_config(decoder, i);
         if (!config)
         {
-            fprintf(stderr, "Decoder %s does not support device type %s.\n", decoder->name, av_hwdevice_get_type_name(type));
+            fprintf(stderr, "Decoder %s does not support device type %s.\n", decoder->name, av_hwdevice_get_type_name(hw_type));
             return -1;
         }
 
         if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) &&
-            config->device_type == type) 
+            config->device_type == hw_type) 
         {
             hw_pix_fmt = config->pix_fmt;
             break;
@@ -199,9 +206,9 @@ int main(int argc, char *argv[])
     if (avcodec_parameters_to_context(decoder_ctx, video->codecpar) < 0)
         return -1;
 
-    decoder_ctx->get_format  = get_hw_format;
+    decoder_ctx->get_format  = get_hw_format_func;
 
-    if (hw_decoder_init(decoder_ctx, type) < 0)
+    if (hw_decoder_init_func(decoder_ctx, hw_type) < 0)
         return -1;
 
     if ((ret = avcodec_open2(decoder_ctx, decoder, NULL)) < 0) 

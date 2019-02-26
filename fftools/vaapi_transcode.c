@@ -6,7 +6,7 @@
  *      - vaapi_transcode input.mp4 vp9_vaapi output_vp9.ivf
  */
 
-#if 1
+#if 0
 #include <stdio.h>
 #include <errno.h>
 
