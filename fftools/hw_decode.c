@@ -14,29 +14,16 @@
 #include <libavutil/avassert.h>
 #include <libavutil/imgutils.h>
 
-static AVBufferRef *hw_device_ctx = NULL;
-static enum AVPixelFormat hw_pix_fmt;
-static FILE *output_file = NULL;
+AVStream *video_stream = NULL;
+AVBufferRef *hw_device_ctx = NULL;
+enum AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
 
-static int hw_decoder_init_func(AVCodecContext *ctx, const enum AVHWDeviceType type)
-{
-    int err = 0;
-
-    if ((err = av_hwdevice_ctx_create(&hw_device_ctx, type, NULL, NULL, 0)) < 0) 
-    {
-        fprintf(stderr, "Failed to create specified HW device.\n");
-        return err;
-    }
-    ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
-
-    return err;
-}
+FILE *output_file = NULL;
 
 static enum AVPixelFormat get_hw_format_func(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts)
 {
-    const enum AVPixelFormat *p;
-
-    for (p = pix_fmts; *p != -1; p++) 
+    const enum AVPixelFormat *p = pix_fmts;
+    for (; *p != -1; p++) 
     {
         if (*p == hw_pix_fmt)
             return *p;
@@ -83,6 +70,7 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
             goto fail;
         }
 
+        int64_t st = frame->pts * av_q2d(video_stream->time_base);
         if (frame->format == hw_pix_fmt) 
         {
             /* retrieve data from GPU to CPU */
@@ -91,15 +79,17 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
                 fprintf(stderr, "Error transferring the data to system memory\n");
                 goto fail;
             }
-            tmp_frame = sw_frame;
+            tmp_frame = sw_frame;  
+            fprintf(stderr, "get frame by GPU %lld s.\n", st);
         }
         else
+        {
             tmp_frame = frame;
+            fprintf(stderr, "get frame by CPU %lld s.\n", st);
+        }
 
         int buffer_align = 1;
-
-        enum AVPixelFormat tempfmt = tmp_frame->format;
-
+         
         size = av_image_get_buffer_size(tmp_frame->format, tmp_frame->width, tmp_frame->height, buffer_align);
         buffer = av_malloc(size);
         if (!buffer)
@@ -142,25 +132,25 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
 int main(int argc, char *argv[])
 {
     AVFormatContext *input_ctx = NULL;
-    int video_stream, ret;
-    AVStream *video = NULL;
+    int video_stream_index, ret;
     AVCodecContext *decoder_ctx = NULL;
     AVCodec *decoder = NULL;
     AVPacket packet;
     enum AVHWDeviceType hw_type = AV_HWDEVICE_TYPE_NONE;
 
-    fprintf(stderr, "Available device types:");
     while ((hw_type = av_hwdevice_iterate_types(hw_type)) != AV_HWDEVICE_TYPE_NONE)
-        fprintf(stderr, " %s", av_hwdevice_get_type_name(hw_type));
+        fprintf(stderr, "Available device types: %s\n", av_hwdevice_get_type_name(hw_type));
 
-    hw_type = av_hwdevice_find_type_by_name("cuda");
-    if (hw_type == AV_HWDEVICE_TYPE_NONE)
+    hw_type = AV_HWDEVICE_TYPE_NONE;
+    while ((hw_type = av_hwdevice_iterate_types(hw_type)) != AV_HWDEVICE_TYPE_NONE)
     {
-        fprintf(stderr, "Device type is not supported.\n");
-        return -1;
+        if (hw_type != AV_HWDEVICE_TYPE_NONE)
+        { 
+            fprintf(stderr, "\nused device types: %s\n", av_hwdevice_get_type_name(hw_type));
+            break;
+        }
     }
-
-    /* open the input file */
+     
     if (avformat_open_input(&input_ctx, "test.mp4", NULL, NULL) != 0)
     {
         fprintf(stderr, "Cannot open input file \n");
@@ -172,15 +162,16 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Cannot find input stream information.\n");
         return -1;
     }
-
-    /* find the video stream information */
+     
     ret = av_find_best_stream(input_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &decoder, 0);
     if (ret < 0) 
     {
         fprintf(stderr, "Cannot find a video stream in the input file\n");
         return -1;
     }
-    video_stream = ret;
+
+    video_stream_index = ret;
+    video_stream = input_ctx->streams[video_stream_index];
      
     for (int i = 0;; i++)
     {
@@ -202,18 +193,24 @@ int main(int argc, char *argv[])
     if (!(decoder_ctx = avcodec_alloc_context3(decoder)))
         return AVERROR(ENOMEM);
 
-    video = input_ctx->streams[video_stream];
-    if (avcodec_parameters_to_context(decoder_ctx, video->codecpar) < 0)
+    int64_t duration = video_stream->duration * av_q2d(video_stream->time_base);
+    fprintf(stderr, "duration: %lld seconds \n\n", duration);
+
+    if (avcodec_parameters_to_context(decoder_ctx, video_stream->codecpar) < 0)
         return -1;
 
-    decoder_ctx->get_format  = get_hw_format_func;
-
-    if (hw_decoder_init_func(decoder_ctx, hw_type) < 0)
+    if ((ret = av_hwdevice_ctx_create(&hw_device_ctx, hw_type, NULL, NULL, 0)) < 0)
+    {
+        fprintf(stderr, "Failed to create specified HW device.\n");
         return -1;
+    }
+
+    decoder_ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+    decoder_ctx->get_format = get_hw_format_func;
 
     if ((ret = avcodec_open2(decoder_ctx, decoder, NULL)) < 0) 
     {
-        fprintf(stderr, "Failed to open codec for stream #%u\n", video_stream);
+        fprintf(stderr, "Failed to open codec for stream #%u\n", video_stream_index);
         return -1;
     }
 
@@ -226,7 +223,7 @@ int main(int argc, char *argv[])
         if ((ret = av_read_frame(input_ctx, &packet)) < 0)
             break;
 
-        if (video_stream == packet.stream_index)
+        if (video_stream_index == packet.stream_index)
             ret = decode_write(decoder_ctx, &packet);
 
         av_packet_unref(&packet);
@@ -245,6 +242,7 @@ int main(int argc, char *argv[])
     avformat_close_input(&input_ctx);
     av_buffer_unref(&hw_device_ctx);
 
+    getchar();
     return 0;
 }
 #endif
