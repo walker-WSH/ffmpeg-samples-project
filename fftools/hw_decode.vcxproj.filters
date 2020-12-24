@@ -26,5 +26,13 @@
     <ClCompile Include="..\doc\examples\filtering_audio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\doc\examples\WaveSaver.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\doc\examples\WaveSaver.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

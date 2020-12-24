@@ -36,7 +36,10 @@
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
 
-static const char *filter_descr = "aresample=8000,aformat=sample_fmts=s16:channel_layouts=mono";
+#include "WaveSaver.h"
+#include <assert.h>
+
+static const char *filter_descr = "equalizer=f=8000:width_type=h:width=400:g=-100";
 static const char *player       = "ffplay -f s16le -ar 8000 -ac 1 -";
 
 static AVFormatContext *fmt_ctx;
@@ -45,6 +48,8 @@ AVFilterContext *buffersink_ctx;
 AVFilterContext *buffersrc_ctx;
 AVFilterGraph *filter_graph;
 static int audio_stream_index = -1;
+
+struct CWaveSaver saver;
 
 static int open_input_file(const char *filename)
 {
@@ -88,13 +93,17 @@ static int init_filters(const char *filters_descr)
 {
     char args[512];
     int ret = 0;
+
     const AVFilter *abuffersrc  = avfilter_get_by_name("abuffer");
     const AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
+
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
-    static const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
-    static const int64_t out_channel_layouts[] = { AV_CH_LAYOUT_MONO, -1 };
-    static const int out_sample_rates[] = { 8000, -1 };
+
+    enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
+    int64_t out_channel_layouts[] = { dec_ctx->channel_layout, -1 };
+    int out_sample_rates[] = { dec_ctx->sample_rate, -1 };
+
     const AVFilterLink *outlink;
     AVRational time_base = fmt_ctx->streams[audio_stream_index]->time_base;
 
@@ -102,6 +111,21 @@ static int init_filters(const char *filters_descr)
     if (!outputs || !inputs || !filter_graph) {
         ret = AVERROR(ENOMEM);
         goto end;
+    }
+
+    {
+
+            WAVEFORMATEX wf;
+            wf.cbSize = 0;
+            wf.wFormatTag = WAVE_FORMAT_PCM;
+            wf.nChannels = dec_ctx->channels;
+            wf.nSamplesPerSec = dec_ctx->sample_rate;
+            wf.wBitsPerSample = 16;
+            wf.nBlockAlign = (wf.nChannels * wf.wBitsPerSample) / 8;
+            wf.nAvgBytesPerSec = dec_ctx->sample_rate * dec_ctx->channels * (wf.wBitsPerSample / 8);
+
+            Open(&saver, "d:\\test.wav", &wf, 60);
+
     }
 
     /* buffer audio source: the decoded frames from the decoder will be inserted here. */
@@ -178,6 +202,7 @@ static int init_filters(const char *filters_descr)
                                         &inputs, &outputs, NULL)) < 0)
     {
             fprintf(stderr, "avfilter_graph_parse_ptr : %s\n", av_err2str(ret));
+            assert(0);
             goto end;
     }
 
@@ -202,6 +227,11 @@ end:
 
 static void print_frame(const AVFrame *frame)
 {
+    //    WriteData(&saver, frame->data[0], frame->linesize[0]);
+        WriteData(&saver, frame->data[0], frame->nb_samples * frame->channels * 2);
+        return;
+
+
     const int n = frame->nb_samples * av_get_channel_layout_nb_channels(frame->channel_layout);
     const uint16_t *p     = (uint16_t*)frame->data[0];
     const uint16_t *p_end = p + n;
@@ -221,6 +251,8 @@ int main(int argc, char **argv)
     AVFrame *frame = av_frame_alloc();
     AVFrame *filt_frame = av_frame_alloc();
 
+    memset(&saver, 0, sizeof(saver));
+
     if (!frame || !filt_frame) {
         perror("Could not allocate frame");
         exit(1);
@@ -232,6 +264,7 @@ int main(int argc, char **argv)
 
     if ((ret = open_input_file(argv[1])) < 0)
         goto end;
+
     if ((ret = init_filters(filter_descr)) < 0)
         goto end;
 
@@ -279,6 +312,9 @@ int main(int argc, char **argv)
         }
         av_packet_unref(&packet);
     }
+
+    Close(&saver);
+
 end:
     avfilter_graph_free(&filter_graph);
     avcodec_free_context(&dec_ctx);

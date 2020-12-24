@@ -153,10 +153,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\doc\examples\filtering_audio.c" />
+    <ClCompile Include="..\doc\examples\WaveSaver.c" />
     <ClCompile Include="hw_decode.c" />
     <ClCompile Include="qsvdec.c" />
     <ClCompile Include="vaapi_encode.c" />
     <ClCompile Include="vaapi_transcode.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\doc\examples\WaveSaver.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
