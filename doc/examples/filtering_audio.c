@@ -28,7 +28,7 @@
  * @example filtering_audio.c
  */
 
-#include <unistd.h>
+//#include <unistd.h>
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -176,7 +176,10 @@ static int init_filters(const char *filters_descr)
 
     if ((ret = avfilter_graph_parse_ptr(filter_graph, filters_descr,
                                         &inputs, &outputs, NULL)) < 0)
-        goto end;
+    {
+            fprintf(stderr, "avfilter_graph_parse_ptr : %s\n", av_err2str(ret));
+            goto end;
+    }
 
     if ((ret = avfilter_graph_config(filter_graph, NULL)) < 0)
         goto end;

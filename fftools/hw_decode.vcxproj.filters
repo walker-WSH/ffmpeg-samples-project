@@ -23,5 +23,8 @@
     <ClCompile Include="vaapi_transcode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\doc\examples\filtering_audio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

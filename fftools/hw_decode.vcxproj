@@ -152,6 +152,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\doc\examples\filtering_audio.c" />
     <ClCompile Include="hw_decode.c" />
     <ClCompile Include="qsvdec.c" />
     <ClCompile Include="vaapi_encode.c" />

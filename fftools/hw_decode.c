@@ -2,7 +2,7 @@
  * This example shows how to do HW-accelerated decoding with output
  * frames from the HW video surfaces.
  */
-#if 1
+#if 0
 #include <stdio.h>
 #include <windows.h>
 
